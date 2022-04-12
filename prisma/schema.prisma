@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid()) @map("_id")
+  name     String
+  register String @unique
+  status   Status @default(ATIVO)
+  role     Role
+
+  machineId String?
+  Machine   Machine? @relation(fields: [machineId], references: [id])
+  @@map("users")
+}
+
+model Factory {
+  id          String    @id @default(uuid()) @map("_id")
+  description String
+  machine     Machine[]
+
+
+  @@map("factories")
+}
+
+model Machine {
+  id             String        @id @default(uuid()) @map("_id")
+  insertBy       String
+  CanBeOperateBy User[]
+  gears          Gear[]
+  factoryId      String?
+  Factory        Factory?      @relation(fields: [factoryId], references: [id])
+  datalogger     Boolean       @default(true)
+  status         StatusMaquina @default(FUNCIONANDO)
+
+  @@map("machines")
+}
+
+model Gear {
+  id        String     @id @default(uuid()) @map("_id")
+  machine   Machine?   @relation(fields: [machineId], references: [id])
+  machineId String?
+  samples   Samples[]
+  gear_type GearType[]
+
+  @@map("gears")
+}
+
+model GearType {
+  id          String  @id @default(uuid()) @map("_id")
+  name        String
+  description String
+  gearId      String?
+  Gear        Gear?   @relation(fields: [gearId], references: [id])
+
+  @@map("gear_types")
+}
+
+model Samples {
+  id            String         @id @default(uuid()) @map("_id")
+  timestamp     DateTime       @default(now())
+  Gear          Gear?          @relation(fields: [gearId], references: [id])
+  single_sample SingleSample[]
+  gearId        String?
+
+  @@map("samples")
+}
+
+model SingleSample {
+  id                 String           @id @default(uuid()) @map("_id")
+  value              String
+  singleSampleTypeId String
+  single_sample_type SingleSampleType @relation(fields: [singleSampleTypeId], references: [id])
+  Samples            Samples?         @relation(fields: [samplesId], references: [id])
+  samplesId          String?
+
+  @@map("single_samples")
+}
+
+model SingleSampleType {
+  id           String         @id @default(uuid()) @map("_id")
+  sample_name  String
+  unity        String
+  createBy     String
+  SingleSample SingleSample[]
+}
+
+enum Role {
+  PRODUCAO
+  ADMIN
+}
+
+enum Status {
+  ATIVO
+  INATIVO
+}
+
+enum StatusMaquina {
+  FUNCIONANDO
+  MANUTENCAO
+  DESATIVADA
+}
